@@ -56,7 +56,15 @@ HTTP_FAN_V2.prototype = {
     },
 
     getServices: function () {
-        return [this.homebridgeService];
+        const informationService = new Service.AccessoryInformation();
+
+        informationService
+            .setCharacteristic(Characteristic.Manufacturer, "Andreas Bauer")
+            .setCharacteristic(Characteristic.Model, "HTTP Fan")
+            .setCharacteristic(Characteristic.SerialNumber, "FAN02")
+            .setCharacteristic(Characteristic.FirmwareRevision, "0.1.0");
+
+        return [informationService, this.homebridgeService];
     },
 
     getActiveState: function (callback) {
