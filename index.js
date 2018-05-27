@@ -1,7 +1,8 @@
 "use strict";
 
 let Service, Characteristic;
-let request = require("request");
+
+const request = require("request");
 const packageJSON = require("./package");
 
 module.exports = function (homebridge) {
@@ -69,59 +70,51 @@ HTTP_FAN_V2.prototype = {
     },
 
     getActiveState: function (callback) {
-        const that = this;
-
         this._doRequest("getActiveState", this.active.statusUrl, "GET", "active.statusUrl", callback, function (body) {
             const active = parseInt(body);
 
             if (active !== 0 && active !== 1) {
-                that.log("active.statusUrl responded with an invalid value: " + active);
+                this.log("active.statusUrl responded with an invalid value: " + active);
                 callback(new Error("active.statusUrl responded with an invalid value: " + active));
             }
             else {
-                that.log("fan is currently %s", active === 1 ? "ACTIVE" : "INACTIVE");
+                this.log("fan is currently %s", active === 1 ? "ACTIVE" : "INACTIVE");
 
                 callback(null, active);
             }
-        });
+        }.bind(this));
     },
 
     setActiveState: function (active, callback) {
-        const that = this;
-
         const url = active === 1? this.active.onUrl: this.active.offUrl;
         const urlName = active === 1? "active.onUrl": "active.offUrl";
 
         this._doRequest("setActiveState", url, this.active.httpMethod, urlName, callback, function (body) {
-            that.log("fan successfully set to %s", active === 1? "ACTIVE": "INACTIVE");
+            this.log("fan successfully set to %s", active === 1? "ACTIVE": "INACTIVE");
 
             callback(undefined, body);
-        });
+        }.bind(this));
     },
 
     getRotationSpeed: function (callback) {
-        const that = this;
-
         this._doRequest("getRotationSpeed", this.rotationSpeed.statusUrl, "GET", "rotationSpeed.statusUrl", callback, function (body) {
             const rotationSpeed = parseInt(body);
-            that.log("rotationSpeed is currently at %s %", rotationSpeed);
+            this.log("rotationSpeed is currently at %s %", rotationSpeed);
 
             callback(null, rotationSpeed);
-        });
+        }.bind(this));
     },
 
     setRotationSpeed: function (rotationSpeed, callback) {
-        const that = this;
-
         let url = this.rotationSpeed.setUrl;
         if (url)
             url = this.rotationSpeed.setUrl.replace("%s", rotationSpeed);
 
         this._doRequest("setRotationSpeed", url, this.rotationSpeed.httpMethod, "rotationSpeed.setUrl", callback, function (body) {
-            that.log("rotationSpeed successfully set to %s %", rotationSpeed);
+            this.log("rotationSpeed successfully set to %s %", rotationSpeed);
 
             callback(undefined, body);
-        });
+        }.bind(this));
     },
 
     _doRequest: function (methodName, url, httpMethod, urlName, callback, successCallback) {
@@ -130,8 +123,6 @@ HTTP_FAN_V2.prototype = {
             callback(new Error("No '" + urlName + "' defined!"));
             return;
         }
-
-        let that = this;
 
         request(
             {
@@ -142,17 +133,17 @@ HTTP_FAN_V2.prototype = {
             },
             function (error, response, body) {
                 if (error) {
-                    that.log(methodName + "() failed: %s", error.message);
+                    this.log(methodName + "() failed: %s", error.message);
                     callback(error);
                 }
                 else if (response.statusCode !== 200) {
-                    that.log(methodName + "() returned http error: %s", response.statusCode);
+                    this.log(methodName + "() returned http error: %s", response.statusCode);
                     callback(new Error("Got http error code " + response.statusCode));
                 }
                 else {
                     successCallback(body);
                 }
-            }
+            }.bind(this)
         );
     }
 
