@@ -3,7 +3,7 @@
 let Service, Characteristic, api;
 
 const request = require("request");
-const packageJSON = require("./package");
+const packageJSON = require("./package.json");
 
 module.exports = function (homebridge) {
     Service = homebridge.hap.Service;
