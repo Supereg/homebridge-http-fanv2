@@ -2,6 +2,7 @@
 
 let Service, Characteristic;
 let request = require("request");
+const packageJSON = require("./package");
 
 module.exports = function (homebridge) {
     Service = homebridge.hap.Service;
@@ -62,7 +63,7 @@ HTTP_FAN_V2.prototype = {
             .setCharacteristic(Characteristic.Manufacturer, "Andreas Bauer")
             .setCharacteristic(Characteristic.Model, "HTTP Fan")
             .setCharacteristic(Characteristic.SerialNumber, "FAN02")
-            .setCharacteristic(Characteristic.FirmwareRevision, "0.1.0");
+            .setCharacteristic(Characteristic.FirmwareRevision, packageJSON.version);
 
         return [informationService, this.homebridgeService];
     },
