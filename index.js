@@ -1,6 +1,6 @@
 "use strict";
 
-let Service, Characteristic;
+let Service, Characteristic, api;
 
 const request = require("request");
 const packageJSON = require("./package");
@@ -8,6 +8,8 @@ const packageJSON = require("./package");
 module.exports = function (homebridge) {
     Service = homebridge.hap.Service;
     Characteristic = homebridge.hap.Characteristic;
+
+    api = homebridge;
 
     homebridge.registerAccessory("homebridge-http-fanv2", "HTTP-FAN-V2", HTTP_FAN_V2);
 };
@@ -48,6 +50,21 @@ function HTTP_FAN_V2(log, config) {
             .on("set", this.setRotationSpeed.bind(this));
     }
 
+    this.notificationID = config.notificationID;
+    this.notificationPassword = config.notificationPassword;
+
+    if (this.notificationID) {
+        api.on('didFinishLaunching', function() {
+            if (api.notificationRegistration && typeof api.notificationRegistration === "function") {
+                try {
+                    api.notificationRegistration(this.notificationID, this.handleNotification.bind(this), this.notificationPassword);
+                    this.log("Detected running notification server. Registered successfully!");
+                } catch (error) {
+                    this.log("Could not register notification handler. ID '" + this.notificationID + "' is already taken!")
+                }
+            }
+        }.bind(this));
+    }
 }
 
 HTTP_FAN_V2.prototype = {
@@ -69,6 +86,28 @@ HTTP_FAN_V2.prototype = {
         return [informationService, this.homebridgeService];
     },
 
+    handleNotification: function (body) {
+        const value = body.value;
+
+        let characteristic;
+        switch (body.characteristic) {
+            case "Active":
+                characteristic = Characteristic.Active;
+                break;
+            case "RotationSpeed":
+                characteristic = Characteristic.RotationSpeed;
+                break;
+            default:
+                this.log("Encountered unknown characteristic handling notification: " + body.characteristic);
+                return;
+        }
+
+        this.log("Updating '" + body.characteristic + "' to new value: " + body.value);
+
+        this.ignoreNextSet = true; // we use one variable for every characteristic, since every characteristic has an pw currently
+        this.homebridgeService.setCharacteristic(characteristic, value);
+    },
+
     getActiveState: function (callback) {
         this._doRequest("getActiveState", this.active.statusUrl, "GET", "active.statusUrl", callback, function (body) {
             const active = parseInt(body);
@@ -86,6 +125,12 @@ HTTP_FAN_V2.prototype = {
     },
 
     setActiveState: function (active, callback) {
+        if (this.ignoreNextSet) {
+            this.ignoreNextSet = false;
+            callback(undefined);
+            return;
+        }
+
         const url = active === 1? this.active.onUrl: this.active.offUrl;
         const urlName = active === 1? "active.onUrl": "active.offUrl";
 
@@ -106,6 +151,12 @@ HTTP_FAN_V2.prototype = {
     },
 
     setRotationSpeed: function (rotationSpeed, callback) {
+        if (this.ignoreNextSet) {
+            this.ignoreNextSet = false;
+            callback(undefined);
+            return;
+        }
+
         let url = this.rotationSpeed.setUrl;
         if (url)
             url = this.rotationSpeed.setUrl.replace("%s", rotationSpeed);
