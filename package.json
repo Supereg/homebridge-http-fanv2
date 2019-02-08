@@ -1,6 +1,6 @@
 {
   "name": "homebridge-http-fanv2",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Http Fan V2 for Homebridge",
   "license": "ISC",
   "keywords": [
