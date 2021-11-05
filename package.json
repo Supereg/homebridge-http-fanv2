@@ -21,6 +21,6 @@
     "request": "^2.88.2"
   },
   "devDependencies": {
-    "hap-nodejs": "^0.5.7"
+    "hap-nodejs": "^0.9.6"
   }
 }
